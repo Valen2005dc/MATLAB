@@ -1,0 +1,65 @@
+% Configuración del puerto serial y archivo de log
+s = serialport("COM5", 9600);
+configureTerminator(s, "LF"); % Configura el terminador para que coincida con el formato de datos
+fid = fopen("seriallog.txt", 'a');
+
+% Crear la figura y los objetos de gráfica
+fig = figure;
+ax1 = subplot(4,1,1);
+line1 = animatedline(ax1);
+ylabel('Altura');
+grid on;
+
+ax2 = subplot(4,1,2);
+line2 = animatedline(ax2);
+ylabel('Temperatura');
+grid on;
+
+ax3 = subplot(4,1,3);
+line3 = animatedline(ax3);
+ylabel('Luz');
+grid on;
+
+ax4 = subplot(4,1,4);
+line4 = animatedline(ax4);
+ylabel('RPM');
+xlabel('Tiempo (s)');
+grid on;
+
+% Configuración de la actualización en tiempo real
+numPoints = 100; % Número de puntos a mostrar en la gráfica
+time = 0;
+data = zeros(4, 1);
+
+% Bucle para recibir y procesar datos
+while ishandle(fig)
+    % Leer datos del puerto serial
+    data_str = readline(s);
+    fprintf(fid, '%s\n', data_str);
+    
+    % Convertir cadena a números
+    C = textscan(data_str, '%f, %f, %f, %f');
+    data = [C{1}, C{2}, C{3}, C{4}]';
+
+    % Actualizar gráficas
+    addpoints(line1, time, data(1));
+    addpoints(line2, time, data(2));
+    addpoints(line3, time, data(3));
+    addpoints(line4, time, data(4));
+    
+    % Ajustar ejes para que se muestren los últimos numPoints puntos
+    xlim(ax1, [time-numPoints, time]);
+    xlim(ax2, [time-numPoints, time]);
+    xlim(ax3, [time-numPoints, time]);
+    xlim(ax4, [time-numPoints, time]);
+    
+    % Actualizar tiempo
+    time = time + 1;
+    
+    % Actualizar figura
+    drawnow;
+end
+
+% Cerrar el puerto serial y el archivo de log
+fclose(fid);
+clear s;
